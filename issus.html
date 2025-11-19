@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipment Issues Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #ff9800;
+            --secondary: #ffffff;
+            --success: #4caf50;
+            --danger: #f44336;
+            --light-bg: #fff9f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #f9f9f9;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), #ff5722);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        textarea {
+            min-height: 100px;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: var(--light-bg);
+        }
+        
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 5px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .export-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .issue-detail {
+            margin-bottom: 15px;
+        }
+
+        .issue-detail label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .issue-detail div {
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success {
+            background: var(--success);
+        }
+
+        .notification.error {
+            background: var(--danger);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters {
+                flex-direction: column;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-shipping-fast"></i> Shipment Issues Portal</h1>
+            <div class="stats">
+                <div class="stat-box">
+                    <div id="total-issues">0</div>
+                    <div>Total</div>
+                </div>
+                <div class="stat-box">
+                    <div id="pending-issues">0</div>
+                    <div>Pending</div>
+                </div>
+                <div class="stat-box">
+                    <div id="completed-issues">0</div>
+                    <div>Completed</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="card">
+                <h2>Report New Issue</h2>
+                <form id="issue-form">
+                    <div class="form-group">
+                        <label>AG Number *</label>
+                        <input type="text" id="ag-number" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Forwarding HUB *</label>
+                        <select id="forwarding-hub" required>
+                            <option value="">Select HUB</option>
+                            <option value="HUB-HONG KONG">HONG KONG HUB</option>
+                            <option value="HUB-DTD (UK)">DTD (UK) HUB</option>
+                            <option value="HUB-DTDC (DUBAI)">DTDC (DUBAI) HUB</option>
+                            <option value="HUB-MALAYSIA">MALAYSIA HUB</option>
+                            <option value="HUB-JAPAN">JAPAN HUB</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Country *</label>
+                        <select id="country" required>
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Forwarding Number *</label>
+                        <input type="text" id="forwarding-number" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Tracking Number *</label>
+                        <input type="text" id="tracking-number" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Issue Description *</label>
+                        <textarea id="issue-description" required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Issue
+                    </button>
+                </form>
+            </div>
+            
+            <div>
+                <div class="export-section">
+                    <button class="btn btn-success" id="export-excel">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <h2>Shipment Issues</h2>
+                    
+                    <div class="search-bar">
+                        <input type="text" id="search-input" placeholder="Search by AG Number, Tracking Number...">
+                        <button class="btn btn-primary" id="search-btn">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                    
+                    <div class="filters">
+                        <select id="status-filter">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <select id="hub-filter">
+                            <option value="">All HUBs</option>
+                            <option value="HUB-HONG KONG">HONG KONG</option>
+                            <option value="HUB-DTD (UK)">DTD (UK)</option>
+                            <option value="HUB-DTDC (DUBAI)">DTDC (DUBAI)</option>
+                            <option value="HUB-MALAYSIA">MALAYSIA</option>
+                            <option value="HUB-JAPAN">JAPAN</option>
+                        </select>
+                        <select id="country-filter">
+                            <option value="">All Countries</option>
+                        </select>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>S/N</th>
+                                <th>AG Number</th>
+                                <th>HUB</th>
+                                <th>Country</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="issues-list">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Issue Modal -->
+    <div class="modal" id="view-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Issue Details</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample countries
+        const countries = [
+            "United States", "United Kingdom", "Canada", "Australia", "Germany", 
+            "France", "Japan", "China", "India", "Brazil", "Mexico", "Spain",
+            "Italy", "South Korea", "Russia", "Singapore", "UAE", "Saudi Arabia"
+        ];
+        
+        // Load data from localStorage
+        let issues = JSON.parse(localStorage.getItem('shipmentIssues')) || [];
+        
+        // Calculate next ID based on existing data
+        let nextId = issues.length > 0 ? Math.max(...issues.map(issue => issue.id)) + 1 : 1;
+
+        // DOM elements
+        const issueForm = document.getElementById('issue-form');
+        const issuesList = document.getElementById('issues-list');
+        const countrySelect = document.getElementById('country');
+        const countryFilter = document.getElementById('country-filter');
+        const exportExcelBtn = document.getElementById('export-excel');
+        const viewModal = document.getElementById('view-modal');
+        const modalBody = document.getElementById('modal-body');
+        const closeModal = document.querySelector('.close-modal');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            populateCountries();
+            renderIssues();
+            updateStats();
+            
+            issueForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addIssue();
+            });
+            
+            document.getElementById('search-btn').addEventListener('click', filterIssues);
+            document.getElementById('search-input').addEventListener('keyup', filterIssues);
+            document.getElementById('status-filter').addEventListener('change', filterIssues);
+            document.getElementById('hub-filter').addEventListener('change', filterIssues);
+            countryFilter.addEventListener('change', filterIssues);
+            
+            exportExcelBtn.addEventListener('click', exportToExcel);
+            
+            // Modal events
+            closeModal.addEventListener('click', function() {
+                viewModal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(e) {
+                if (e.target === viewModal) {
+                    viewModal.style.display = 'none';
+                }
+            });
+        });
+
+        // Populate countries
+        function populateCountries() {
+            countries.forEach(country => {
+                const option1 = document.createElement('option');
+                option1.value = country;
+                option1.textContent = country;
+                countrySelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = country;
+                option2.textContent = country;
+                countryFilter.appendChild(option2);
+            });
+        }
+
+        // Add new issue
+        function addIssue() {
+            const agNumber = document.getElementById('ag-number').value;
+            
+            // Check for duplicate AG Number
+            if (issues.some(issue => issue.agNumber === agNumber)) {
+                showNotification('AG Number must be unique!', 'error');
+                return;
+            }
+            
+            const newIssue = {
+                id: nextId++,
+                agNumber: agNumber,
+                forwardingHub: document.getElementById('forwarding-hub').value,
+                country: document.getElementById('country').value,
+                forwardingNumber: document.getElementById('forwarding-number').value,
+                trackingNumber: document.getElementById('tracking-number').value,
+                issueDescription: document.getElementById('issue-description').value,
+                status: 'pending',
+                dateCreated: new Date().toISOString().split('T')[0],
+                lastUpdated: new Date().toISOString()
+            };
+            
+            issues.unshift(newIssue);
+            saveToLocalStorage();
+            renderIssues();
+            updateStats();
+            issueForm.reset();
+            
+            showNotification('Issue added successfully!', 'success');
+        }
+
+        // Render issues table
+        function renderIssues(issuesToRender = issues) {
+            issuesList.innerHTML = issuesToRender.map((issue, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${issue.agNumber}</td>
+                    <td>${issue.forwardingHub}</td>
+                    <td>${issue.country}</td>
+                    <td>
+                        <span class="status status-${issue.status}">
+                            ${issue.status === 'pending' ? 'Pending' : 'Completed'}
+                        </span>
+                    </td>
+                    <td>${new Date(issue.dateCreated).toLocaleDateString()}</td>
+                    <td class="actions">
+                        <button class="action-btn" onclick="viewIssue(${issue.id})" 
+                                style="background:#e3f2fd; color:#1976d2;" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn" onclick="updateStatus(${issue.id}, 'pending')" 
+                                ${issue.status === 'pending' ? 'disabled' : ''}
+                                style="background:#fff3cd; color:#856404;" title="Mark as Pending">
+                            <i class="fas fa-clock"></i>
+                        </button>
+                        <button class="action-btn" onclick="updateStatus(${issue.id}, 'completed')" 
+                                ${issue.status === 'completed' ? 'disabled' : ''}
+                                style="background:#d4edda; color:#155724;" title="Mark as Completed">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="action-btn" onclick="deleteIssue(${issue.id})" 
+                                style="background:#f8d7da; color:#721c24;" title="Delete Issue">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // View issue details
+        function viewIssue(id) {
+            const issue = issues.find(issue => issue.id === id);
+            if (issue) {
+                modalBody.innerHTML = `
+                    <div class="issue-detail">
+                        <label>AG Number</label>
+                        <div>${issue.agNumber}</div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Forwarding HUB</label>
+                        <div>${issue.forwardingHub}</div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Country</label>
+                        <div>${issue.country}</div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Forwarding Number</label>
+                        <div>${issue.forwardingNumber}</div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Tracking Number</label>
+                        <div>${issue.trackingNumber}</div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Status</label>
+                        <div><span class="status status-${issue.status}">${issue.status === 'pending' ? 'Pending' : 'Completed'}</span></div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Date Created</label>
+                        <div>${new Date(issue.dateCreated).toLocaleDateString()}</div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Last Updated</label>
+                        <div>${new Date(issue.lastUpdated).toLocaleString()}</div>
+                    </div>
+                    <div class="issue-detail">
+                        <label>Issue Description</label>
+                        <div>${issue.issueDescription}</div>
+                    </div>
+                `;
+                viewModal.style.display = 'flex';
+            }
+        }
+
+        // Filter issues
+        function filterIssues() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusValue = document.getElementById('status-filter').value;
+            const hubValue = document.getElementById('hub-filter').value;
+            const countryValue = countryFilter.value;
+            
+            const filteredIssues = issues.filter(issue => {
+                const matchesSearch = 
+                    issue.agNumber.toLowerCase().includes(searchTerm) ||
+                    issue.trackingNumber.toLowerCase().includes(searchTerm) ||
+                    issue.forwardingNumber.toLowerCase().includes(searchTerm);
+                
+                const matchesStatus = !statusValue || issue.status === statusValue;
+                const matchesHub = !hubValue || issue.forwardingHub === hubValue;
+                const matchesCountry = !countryValue || issue.country === countryValue;
+                
+                return matchesSearch && matchesStatus && matchesHub && matchesCountry;
+            });
+            
+            renderIssues(filteredIssues);
+        }
+
+        // Update status
+        function updateStatus(id, newStatus) {
+            const issue = issues.find(issue => issue.id === id);
+            if (issue) {
+                issue.status = newStatus;
+                issue.lastUpdated = new Date().toISOString();
+                saveToLocalStorage();
+                renderIssues();
+                updateStats();
+                showNotification(`Status updated to: ${newStatus === 'pending' ? 'Pending' : 'Completed'}`, 'success');
+            }
+        }
+
+        // Delete issue
+        function deleteIssue(id) {
+            if (confirm('Are you sure you want to delete this issue?')) {
+                issues = issues.filter(issue => issue.id !== id);
+                saveToLocalStorage();
+                renderIssues();
+                updateStats();
+                showNotification('Issue deleted successfully!', 'success');
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('total-issues').textContent = issues.length;
+            document.getElementById('pending-issues').textContent = 
+                issues.filter(issue => issue.status === 'pending').length;
+            document.getElementById('completed-issues').textContent = 
+                issues.filter(issue => issue.status === 'completed').length;
+        }
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('shipmentIssues', JSON.stringify(issues));
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            if (issues.length === 0) {
+                showNotification('No data to export!', 'error');
+                return;
+            }
+            
+            const excelData = issues.map((issue, index) => ({
+                'S/N': index + 1,
+                'AG Number': issue.agNumber,
+                'Forwarding HUB': issue.forwardingHub,
+                'Country': issue.country,
+                'Forwarding Number': issue.forwardingNumber,
+                'Tracking Number': issue.trackingNumber,
+                'Status': issue.status === 'pending' ? 'Pending' : 'Completed',
+                'Issue Description': issue.issueDescription,
+                'Date Created': issue.dateCreated
+            }));
+            
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Shipment Issues');
+            XLSX.writeFile(workbook, `Shipment_Issues_${new Date().toISOString().split('T')[0]}.xlsx`);
+            
+            showNotification('Data exported to Excel successfully!', 'success');
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            // Remove existing notification
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
