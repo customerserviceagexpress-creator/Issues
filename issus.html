@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* Your existing CSS styles here - they are correct */
         :root {
             --primary: #ff9800;
             --secondary: #ffffff;
@@ -114,6 +113,11 @@
         
         .btn-success {
             background: var(--success);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
             color: white;
         }
         
@@ -253,36 +257,133 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: linear-gradient(135deg, #623908 0%, #e18700 100%);
             z-index: 2000;
             align-items: center;
             justify-content: center;
+            animation: fadeIn 0.5s ease;
         }
 
         .login-content {
             background: white;
-            border-radius: 10px;
-            padding: 30px;
+            border-radius: 15px;
+            padding: 40px;
             width: 90%;
             max-width: 400px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            animation: slideUp 0.5s ease;
         }
 
         .login-header {
-            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-container {
             margin-bottom: 20px;
         }
 
+        .logo-icon {
+            font-size: 3rem;
+            color: #ff9800;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
         .login-header h2 {
-            color: var(--primary);
+            color: #333;
             margin-bottom: 10px;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .login-header p {
+            color: #666;
+            margin-bottom: 0;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #ff9800;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 87, 34, 0.3);
         }
 
         .login-footer {
-            margin-top: 20px;
+            margin-top: 30px;
+            border-top: 1px solid #e1e5e9;
+            padding-top: 25px;
+        }
+
+        .reset-section {
             text-align: center;
-            font-size: 0.9em;
-            color: #666;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #6c757d;
+            color: #6c757d;
+            background: transparent;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
+
+        .reset-btn:hover {
+            background: #6c757d;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
+        }
+
+        .reset-hint {
+            color: #888;
+            font-size: 0.8rem;
         }
 
         .user-info {
@@ -318,6 +419,10 @@
             background: var(--danger);
         }
 
+        .notification.warning {
+            background: #ff9800;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -326,6 +431,26 @@
             to {
                 transform: translateX(0);
                 opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
         
@@ -351,6 +476,7 @@
                 margin-left: 0;
             }
         }
+        
     </style>
 </head>
 <body>
@@ -358,27 +484,34 @@
     <div class="login-modal" id="login-modal">
         <div class="login-content">
             <div class="login-header">
-                <h2><i class="fas fa-shipping-fast"></i> Shipment Issues Portal</h2>
+                <div class="logo-container">
+                    <i class="fas fa-shipping-fast logo-icon"></i>
+                </div>
+                <h2>Shipment Issues Portal</h2>
                 <p>Please log in to continue</p>
             </div>
+            
             <form id="login-form">
                 <div class="form-group">
                     <label>User ID</label>
-                    <input type="text" id="login-user-id" required>
+                    <input type="text" id="login-user-id" required placeholder="Enter your user ID">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="login-password" required>
+                    <input type="password" id="login-password" required placeholder="Enter your password">
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                <button type="submit" class="btn btn-primary login-btn">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
             </form>
+            
             <div class="login-footer">
-                
-                <button type="button" class="btn" style="margin-top: 10px; background: #f0f0f0;" onclick="resetUsers()">
-                    <i class="fas fa-sync-alt"></i> User Data Reset
-                </button>
+                <div class="reset-section">
+                    <button type="button" class="btn btn-outline reset-btn" onclick="resetUsers()">
+                        <i class="fas fa-sync-alt"></i> Reset System
+                    </button>
+                    <small class="reset-hint">Use this if login issues occur</small>
+                </div>
             </div>
         </div>
     </div>
@@ -549,16 +682,16 @@
             {
                 id: 1,
                 name: "Administrator",
-                userId: "admin",
+                userId: "adminuser",
                 password: "Bipin123",
                 role: "admin",
                 issues: []
             },
             {
                 id: 2,
-                name: "HUB User", 
-                userId: "Hubuser",
-                password: "Hub123",
+                name: "Regular User", 
+                userId: "tinkunehub@gmail.com",
+                password: "Bipin@123",
                 role: "user",
                 issues: []
             }
@@ -588,8 +721,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Clear any old localStorage data and reset to default users
-            resetUsers();
+            initializeUsers();
             
             // Check if user is already logged in
             const savedUser = localStorage.getItem('currentUser');
@@ -642,13 +774,27 @@
 
         // Reset users to default
         function resetUsers() {
-            console.log('Resetting users to defaults...');
-            users = JSON.parse(JSON.stringify(defaultUsers));
-            localStorage.setItem('shipmentUsers', JSON.stringify(users));
-            localStorage.removeItem('currentUser');
-            console.log('Default users set:', users);
-            showNotification('Users reset to defaults!', 'success');
-            showLogin();
+            if (confirm('Are you sure you want to reset all users and data? This will clear all existing issues.')) {
+                users = JSON.parse(JSON.stringify(defaultUsers));
+                localStorage.setItem('shipmentUsers', JSON.stringify(users));
+                localStorage.removeItem('currentUser');
+                console.log('Default users set:', users);
+                showNotification('Users reset to defaults! All user data cleared.', 'warning');
+                showLogin();
+            }
+        }
+
+        // Initialize users - load from localStorage or use defaults
+        function initializeUsers() {
+            const savedUsers = localStorage.getItem('shipmentUsers');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+                console.log('Loaded users from localStorage:', users);
+            } else {
+                users = JSON.parse(JSON.stringify(defaultUsers));
+                localStorage.setItem('shipmentUsers', JSON.stringify(users));
+                console.log('Created default users:', users);
+            }
         }
 
         // Show login screen
@@ -685,7 +831,7 @@
             const user = users.find(u => u.userId === userId && u.password === password);
             
             if (user) {
-                currentUser = user;
+                currentUser = {...user}; // Create a copy to avoid reference issues
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 loadUserData();
                 showApp();
@@ -697,6 +843,8 @@
 
         // Logout function
         function logout() {
+            // Save current user's data before logging out
+            saveUserData();
             currentUser = null;
             localStorage.removeItem('currentUser');
             showLogin();
@@ -706,7 +854,22 @@
         // Load user-specific data
         function loadUserData() {
             userDisplayName.textContent = currentUser.name;
-            issues = currentUser.issues || [];
+            
+            // Load the latest user data from localStorage
+            const savedUsers = localStorage.getItem('shipmentUsers');
+            if (savedUsers) {
+                const allUsers = JSON.parse(savedUsers);
+                const latestUserData = allUsers.find(u => u.id === currentUser.id);
+                if (latestUserData) {
+                    // Update current user with latest data
+                    currentUser = {...latestUserData};
+                    issues = currentUser.issues || [];
+                } else {
+                    issues = currentUser.issues || [];
+                }
+            } else {
+                issues = currentUser.issues || [];
+            }
             
             // Calculate next ID based on user's existing issues
             nextId = issues.length > 0 ? Math.max(...issues.map(issue => issue.id)) + 1 : 1;
@@ -717,17 +880,33 @@
 
         // Save user-specific data
         function saveUserData() {
+            if (!currentUser) return;
+            
             // Update current user's issues
             currentUser.issues = issues;
             
-            // Update in users array
-            const userIndex = users.findIndex(u => u.id === currentUser.id);
-            if (userIndex !== -1) {
-                users[userIndex].issues = issues;
-                // Save updated users to localStorage
-                localStorage.setItem('shipmentUsers', JSON.stringify(users));
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            // Load all users from localStorage
+            const savedUsers = localStorage.getItem('shipmentUsers');
+            let allUsers = [];
+            
+            if (savedUsers) {
+                allUsers = JSON.parse(savedUsers);
             }
+            
+            // Update the current user in the allUsers array
+            const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+            if (userIndex !== -1) {
+                allUsers[userIndex] = {...currentUser};
+            } else {
+                // If user not found (shouldn't happen), add them
+                allUsers.push({...currentUser});
+            }
+            
+            // Save updated users back to localStorage
+            localStorage.setItem('shipmentUsers', JSON.stringify(allUsers));
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            console.log('Saved user data to localStorage:', currentUser);
         }
 
         // Populate countries
@@ -769,7 +948,7 @@
             };
             
             issues.unshift(newIssue);
-            saveUserData();
+            saveUserData(); // Save to user's data
             renderIssues();
             updateStats();
             issueForm.reset();
@@ -890,7 +1069,7 @@
             if (issue) {
                 issue.status = newStatus;
                 issue.lastUpdated = new Date().toISOString();
-                saveUserData();
+                saveUserData(); // Save to user's data
                 renderIssues();
                 updateStats();
                 showNotification(`Status updated to: ${newStatus === 'pending' ? 'Pending' : 'Completed'}`, 'success');
@@ -901,7 +1080,7 @@
         function deleteIssue(id) {
             if (confirm('Are you sure you want to delete this issue?')) {
                 issues = issues.filter(issue => issue.id !== id);
-                saveUserData();
+                saveUserData(); // Save to user's data
                 renderIssues();
                 updateStats();
                 showNotification('Issue deleted successfully!', 'success');
@@ -955,7 +1134,7 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-circle'}"></i>
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'}"></i>
                 ${message}
             `;
             
@@ -969,5 +1148,6 @@
             }, 5000);
         }
     </script>
+    <center><p>BY BIPIN SITAULA | @ 2025</p></center>
 </body>
 </html>
