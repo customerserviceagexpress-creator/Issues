@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* Your existing CSS styles here - they are correct */
         :root {
             --primary: #ff9800;
             --secondary: #ffffff;
@@ -244,6 +245,59 @@
             border-left: 3px solid var(--primary);
         }
 
+        /* Login Modal Styles */
+        .login-modal {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .login-header h2 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .login-footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: 15px;
+        }
+
         /* Notification Styles */
         .notification {
             position: fixed;
@@ -287,13 +341,61 @@
             .actions {
                 flex-direction: column;
             }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .user-actions {
+                margin-left: 0;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Login Modal -->
+    <div class="login-modal" id="login-modal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2><i class="fas fa-shipping-fast"></i> Shipment Issues Portal</h2>
+                <p>Please log in to continue</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="text" id="login-user-id" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+            <div class="login-footer">
+                
+                <button type="button" class="btn" style="margin-top: 10px; background: #f0f0f0;" onclick="resetUsers()">
+                    <i class="fas fa-sync-alt"></i> User Data Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (initially hidden) -->
+    <div class="container" id="app-container" style="display: none;">
         <header>
             <h1><i class="fas fa-shipping-fast"></i> Shipment Issues Portal</h1>
+            <div class="user-info">
+                <span id="user-display-name">User</span>
+                <span id="user-role-badge" style="background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 10px; font-size: 0.8em;"></span>
+                <div class="user-actions">
+                    <button class="btn" style="background: rgba(255,255,255,0.2); color: white;" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
             <div class="stats">
                 <div class="stat-box">
                     <div id="total-issues">0</div>
@@ -440,13 +542,41 @@
             "OMAN","MALAYSIA","Dubai","Rest of UAE","Hong Kong","Singapore"
         ];
         
-        // Load data from localStorage
-        let issues = JSON.parse(localStorage.getItem('shipmentIssues')) || [];
+        // =============================================
+        // HARDCODED USERS - ADD YOUR USERS HERE
+        // =============================================
+        const defaultUsers = [
+            {
+                id: 1,
+                name: "Administrator",
+                userId: "admin",
+                password: "Bipin123",
+                role: "admin",
+                issues: []
+            },
+            {
+                id: 2,
+                name: "HUB User", 
+                userId: "Hubuser",
+                password: "Hub123",
+                role: "user",
+                issues: []
+            }
+        ];
         
-        // Calculate next ID based on existing data
-        let nextId = issues.length > 0 ? Math.max(...issues.map(issue => issue.id)) + 1 : 1;
+        let users = [];
+        let currentUser = null;
+        let issues = [];
+        let nextId = 1;
 
         // DOM elements
+        const loginModal = document.getElementById('login-modal');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userDisplayName = document.getElementById('user-display-name');
+        const userRoleBadge = document.getElementById('user-role-badge');
+        
         const issueForm = document.getElementById('issue-form');
         const issuesList = document.getElementById('issues-list');
         const countrySelect = document.getElementById('country');
@@ -454,14 +584,35 @@
         const exportExcelBtn = document.getElementById('export-excel');
         const viewModal = document.getElementById('view-modal');
         const modalBody = document.getElementById('modal-body');
-        const closeModal = document.querySelector('.close-modal');
+        const closeModal = document.querySelectorAll('.close-modal');
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            populateCountries();
-            renderIssues();
-            updateStats();
+            // Clear any old localStorage data and reset to default users
+            resetUsers();
             
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                loadUserData();
+                showApp();
+            } else {
+                showLogin();
+            }
+            
+            populateCountries();
+            
+            // Login form events
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                login();
+            });
+            
+            // Logout
+            logoutBtn.addEventListener('click', logout);
+            
+            // Main app events
             issueForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 addIssue();
@@ -476,8 +627,10 @@
             exportExcelBtn.addEventListener('click', exportToExcel);
             
             // Modal events
-            closeModal.addEventListener('click', function() {
-                viewModal.style.display = 'none';
+            closeModal.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    viewModal.style.display = 'none';
+                });
             });
             
             window.addEventListener('click', function(e) {
@@ -486,6 +639,96 @@
                 }
             });
         });
+
+        // Reset users to default
+        function resetUsers() {
+            console.log('Resetting users to defaults...');
+            users = JSON.parse(JSON.stringify(defaultUsers));
+            localStorage.setItem('shipmentUsers', JSON.stringify(users));
+            localStorage.removeItem('currentUser');
+            console.log('Default users set:', users);
+            showNotification('Users reset to defaults!', 'success');
+            showLogin();
+        }
+
+        // Show login screen
+        function showLogin() {
+            loginModal.style.display = 'flex';
+            appContainer.style.display = 'none';
+        }
+
+        // Show main application
+        function showApp() {
+            loginModal.style.display = 'none';
+            appContainer.style.display = 'block';
+            
+            // Update user info in header
+            userDisplayName.textContent = currentUser.name;
+            userRoleBadge.textContent = currentUser.role === 'admin' ? 'Administrator' : 'User';
+        }
+
+        // Login function
+        function login() {
+            const userId = document.getElementById('login-user-id').value;
+            const password = document.getElementById('login-password').value;
+            
+            console.log('Login attempt:', userId, password);
+            
+            // Load fresh users from localStorage
+            const savedUsers = localStorage.getItem('shipmentUsers');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            }
+            
+            console.log('Available users:', users);
+            
+            const user = users.find(u => u.userId === userId && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                loadUserData();
+                showApp();
+                showNotification('Login successful!', 'success');
+            } else {
+                showNotification('Invalid user ID or password!', 'error');
+            }
+        }
+
+        // Logout function
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            showLogin();
+            showNotification('Logged out successfully!', 'success');
+        }
+
+        // Load user-specific data
+        function loadUserData() {
+            userDisplayName.textContent = currentUser.name;
+            issues = currentUser.issues || [];
+            
+            // Calculate next ID based on user's existing issues
+            nextId = issues.length > 0 ? Math.max(...issues.map(issue => issue.id)) + 1 : 1;
+            
+            renderIssues();
+            updateStats();
+        }
+
+        // Save user-specific data
+        function saveUserData() {
+            // Update current user's issues
+            currentUser.issues = issues;
+            
+            // Update in users array
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            if (userIndex !== -1) {
+                users[userIndex].issues = issues;
+                // Save updated users to localStorage
+                localStorage.setItem('shipmentUsers', JSON.stringify(users));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        }
 
         // Populate countries
         function populateCountries() {
@@ -526,7 +769,7 @@
             };
             
             issues.unshift(newIssue);
-            saveToLocalStorage();
+            saveUserData();
             renderIssues();
             updateStats();
             issueForm.reset();
@@ -647,7 +890,7 @@
             if (issue) {
                 issue.status = newStatus;
                 issue.lastUpdated = new Date().toISOString();
-                saveToLocalStorage();
+                saveUserData();
                 renderIssues();
                 updateStats();
                 showNotification(`Status updated to: ${newStatus === 'pending' ? 'Pending' : 'Completed'}`, 'success');
@@ -658,7 +901,7 @@
         function deleteIssue(id) {
             if (confirm('Are you sure you want to delete this issue?')) {
                 issues = issues.filter(issue => issue.id !== id);
-                saveToLocalStorage();
+                saveUserData();
                 renderIssues();
                 updateStats();
                 showNotification('Issue deleted successfully!', 'success');
@@ -672,11 +915,6 @@
                 issues.filter(issue => issue.status === 'pending').length;
             document.getElementById('completed-issues').textContent = 
                 issues.filter(issue => issue.status === 'completed').length;
-        }
-
-        // Save to localStorage
-        function saveToLocalStorage() {
-            localStorage.setItem('shipmentIssues', JSON.stringify(issues));
         }
 
         // Export to Excel
@@ -717,20 +955,19 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'}"></i>
+                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-circle'}"></i>
                 ${message}
             `;
             
             document.body.appendChild(notification);
             
-            // Remove after 3 seconds
+            // Remove after 5 seconds
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
                 }
-            }, 3000);
+            }, 5000);
         }
     </script>
 </body>
-
 </html>
